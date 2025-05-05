@@ -1,26 +1,13 @@
 --ALTER SESSION SET CURRENT_SCHEMA=sankhya;
 WITH 
 CTE_NOTA_SERVICO AS (
-    SELECT 
-        NotaOrig, Serv, SUM(qtdneg) AS ITE_QTDNEG, 
-        Serv / SUM(qtdneg) AS TOT_ITEM_SERV, 
-        DTENTSAI_TX
-    FROM 
-        VM_NOTA_SERVICO cab_tx
-    LEFT JOIN 
-        tgfite ite ON ite.nunota = cab_tx.NotaOrig
-    GROUP BY NotaOrig, Serv, DTENTSAI_TX
+    SELECT *
+    FROM  VM_NOTA_SERVICO
+       
 ),
 CTE_NOTA_PRODUTO AS (
-    SELECT 
-        NUNOTA_PROD, SERV, SUM(qtdneg) AS ITE_QTDNEG, 
-        SERV / SUM(qtdneg) AS VALOR_SERV_CO, 
-        DT_SERVICO
-    FROM 
-        VM_NOTA_PRODUTO TOT_CO
-    LEFT JOIN 
-        tgfite ite ON ite.nunota = TOT_CO.NUNOTA_PROD
-    GROUP BY NUNOTA_PROD, SERV, DT_SERVICO
+    SELECT * 
+    FROM VM_NOTA_PRODUTO
 )
 SELECT * 
 FROM (
