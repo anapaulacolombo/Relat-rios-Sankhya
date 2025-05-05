@@ -1,7 +1,4 @@
 --ALTER SESSION SET CURRENT_SCHEMA=sankhya;
-
---ALTER SESSION SET CURRENT_SCHEMA=sankhya;
-
 SELECT * FROM (
         select 
         CAB.DTENTSAI AS DATA_SAIDA, CAB.DTNEG AS DATA_NEGOCIACAO, CAB.DTFATUR AS DATA_FATURAMENTO,
@@ -16,7 +13,10 @@ SELECT * FROM (
         VLRDIFALDEST,VLRFCP,BASEDIFAL,BASEFCP,IDALIQICMS,MARGLUCRO,ALIQSUBTRIB,PERCSTFCPINT,CGC_CPF,TIPPESSOA,GERENTE,CTACONCIL,
         PLA_CONCIL.DESCRCTA DESCCTACONCIL, CAB.CODCENCUS, CAB.CODAGRUPPROD, CAB.DESCRAGRUPPROD,
         TABPRECO, CAB.DTPEDIDO, cab.codtipvenda, cab.DESCRTIPVENDA,
-        CASE WHEN ((CAB.CODNAT = 1010101) and CAB.VLR_NF > 0) THEN round(((nvl(CAB.VALOR_ITEM_IMPOSTOS,0) / nvl(CAB.VLR_NF,1)) * (nvl(CAB_ROY.VLRNOTA,0) + nvl(CAB_TXP.VLRNOTA,0))),2) ELSE 0 END VLR_SERV,
+        CASE WHEN ((CAB.CODNAT = 1010101) and CAB.VLR_NF > 0) THEN
+           round(((nvl(CAB.VALOR_ITEM_IMPOSTOS,0) / nvl(CAB.VLR_NF,1)) * (nvl(CAB_ROY.VLRNOTA,0) + nvl(CAB_TXP.VLRNOTA,0))),2) 
+           ELSE 0 
+        END VLR_SERV,
         CAB_ROY.NUNOTA NUNOTA_ROYALTIES, CAB_ROY.DTENTSAI DTENTSAI_ROYALTIES, CAB_ROY.VLRNOTA VLRNOTA_ROYALTIES,
         CAB_TXP.NUNOTA NUNOTA_TXPUBLIC, CAB_TXP.DTENTSAI DTENTSAI_TXPUBLIC, CAB_TXP.VLRNOTA VLRNOTA_TXPUBLIC,
         RB.RB_TOTAL, RB.RB_PRODUTOS, RB.RB_SERVICOS
@@ -25,20 +25,10 @@ SELECT * FROM (
         JOIN tgfcab c on c.nunota = cab.nunota AND (C.STATUSNFE = 'A' OR C.STATUSNFSE = 'A') AND C.TIPMOV = 'V'/*Ajustado aqui por Daniel Campos na data 20/03/2025*/
         LEFT  JOIN TCBPLA PLA_CONCIL ON PLA_CONCIL.CODCTACTB = CAB.CTACONCIL
         LEFT JOIN (select NotaOrig, Serv, sum(qtdneg) ITE_QTDNEG, Serv / sum(qtdneg) TOT_ITEM_SERV, DTENTSAI_TX
-                   from(
-                        select cab_tx.ad_nunota NotaOrig, SUM(cab_tx.vlrnota) Serv, 
-                        TO_CHAR(cab_tx.DTENTSAI, 'mm/yyyy') DTENTSAI_TX
-                        from tgfcab cab_tx
-                        where cab_tx.CODTIPOPER IN (3205,3238)
-                        AND cab_tx.STATUSNOTA = 'L'
-                        AND (cab_tx.statusnfe = 'A' or cab_tx.statusnfse = 'A')
-                        AND cab_tx.TIPMOV = 'V'
-                        group by cab_tx.ad_nunota, TO_CHAR(cab_tx.DTENTSAI, 'mm/yyyy')
-                    ) cab_tx
+                   from( SELECT * FROM VM_NOTA_SERVICO ) cab_tx
                     left join tgfite ite on ite.nunota = cab_tx.NotaOrig 
                     group by NotaOrig, Serv, DTENTSAI_TX
-        ) TOT_TX ON TOT_TX.NotaOrig = CAB.PEDIDO and TOT_TX.DTENTSAI_TX = TO_CHAR(CAB.DTPEDIDO,'mm/yyyy')
-        LEFT JOIN TGFCAB CAB_ROY ON CAB_ROY.AD_NUNOTA = CAB.PEDIDO AND CAB_ROY.TIPMOV = 'V' and CAB_ROY.Codtipoper = 3205 and TO_CHAR(CAB_ROY.DTENTSAI, 'mm/yyyy') = TO_CHAR(CAB.DTPEDIDO,'mm/yyyy')
+        ) TOT_TX ON TOT_TX.NotaOrig = CAB.PEDIDO and TOT_TX.DTENTSAI_TX = TO_CHAR(CAB.DTPEDIDO,'mm/yyyy')        LEFT JOIN TGFCAB CAB_ROY ON CAB_ROY.AD_NUNOTA = CAB.PEDIDO AND CAB_ROY.TIPMOV = 'V' and CAB_ROY.Codtipoper = 3205 and TO_CHAR(CAB_ROY.DTENTSAI, 'mm/yyyy') = TO_CHAR(CAB.DTPEDIDO,'mm/yyyy')
         LEFT JOIN TGFCAB CAB_TXP ON CAB_TXP.AD_NUNOTA = CAB.PEDIDO AND CAB_TXP.TIPMOV = 'V' and CAB_TXP.Codtipoper = 3238 and TO_CHAR(CAB_TXP.DTENTSAI, 'mm/yyyy') = TO_CHAR(CAB.DTPEDIDO,'mm/yyyy')
         LEFT JOIN RECEITA_BRUTA_PED_SKU RB on RB.NUNOTA_PEDIDO = CAB.PEDIDO AND RB.CODPROD = CAB.CODPROD  
 
@@ -65,25 +55,13 @@ SELECT * FROM (
         FROM VM_NOTAS_FATURADAS CAB
         JOIN tgfcab c on c.nunota = cab.nunota AND (C.STATUSNFE = 'A' OR C.STATUSNFSE = 'A') AND C.TIPMOV = 'V'/*Ajustado aqui por Daniel Campos na data 20/03/2025*/
         LEFT  JOIN TCBPLA PLA_CONCIL ON PLA_CONCIL.CODCTACTB = CAB.CTACONCIL
-        INNER JOIN
-                (select
+        INNER JOIN( select
                   NUNOTA_PROD, SERV, sum(qtdneg) ITE_QTDNEG,
                   SERV / sum(qtdneg) VALOR_SERV_CO, DT_SERVICO
-                  from(
-                          select  A.AD_NUNOTA NUNOTA_PROD, sum(A.VLRNOTA) SERV,
-                          A.DTENTSAI DT_SERVICO
-                          from TGFCAB A
-                          LEFT JOIN TGFCAB B ON A.AD_NUNOTA = B.NUNOTA
-                          where A.CODTIPOPER IN (3205,3238)
-                          AND A.STATUSNOTA = 'L'
-                          AND (A.statusnfe = 'A' or A.statusnfse = 'A')
-                          AND A.TIPMOV = 'V'
-                          and TO_CHAR(B.DTENTSAI, 'mm/yyyy') <> TO_CHAR(A.DTENTSAI, 'mm/yyyy')
-                          group by A.AD_NUNOTA, A.DTENTSAI
-                       ) TOT_CO
+                  from( SELECT * FROM VM_NOTA_PRODUTO ) TOT_CO
                   LEFT JOIN tgfite ite on ite.nunota = TOT_CO.NUNOTA_PROD
-                  GROUP BY NUNOTA_PROD, SERV, DT_SERVICO
-                  )TB_CO on CAB.PEDIDO = TB_CO.NUNOTA_PROD
+                  GROUP BY NUNOTA_PROD, SERV, DT_SERVICO                  
+          )TB_CO on CAB.PEDIDO = TB_CO.NUNOTA_PROD
         LEFT JOIN TGFCAB CAB_ROY ON CAB_ROY.AD_NUNOTA = CAB.PEDIDO AND CAB_ROY.TIPMOV = 'V' and CAB_ROY.Codtipoper = 3205 and TO_CHAR(CAB_ROY.DTENTSAI, 'mm/yyyy') = TO_CHAR(TB_CO.DT_SERVICO, 'mm/yyyy')
         LEFT JOIN TGFCAB CAB_TXP ON CAB_TXP.AD_NUNOTA = CAB.PEDIDO AND CAB_TXP.TIPMOV = 'V' and CAB_TXP.Codtipoper = 3238 and TO_CHAR(CAB_TXP.DTENTSAI, 'mm/yyyy') = TO_CHAR(TB_CO.DT_SERVICO, 'mm/yyyy')
         LEFT JOIN RECEITA_BRUTA_PED_SKU RB on RB.NUNOTA_PEDIDO = CAB.PEDIDO AND RB.CODPROD = CAB.CODPROD 
@@ -98,5 +76,3 @@ where CAB.DATA_SAIDA BETWEEN :DTINI AND :DTFIM
  AND (CAB.CODPROD =:CODPROD OR :CODPROD IS NULL)
  AND (CAB.NUNOTA =:NUNOTA OR :NUNOTA IS NULL)
  AND (CAB.PEDIDO =:PEDIDO OR :PEDIDO IS NULL)
-   
-ORDER BY DATA_SAIDA, NOTA_FISCAL
