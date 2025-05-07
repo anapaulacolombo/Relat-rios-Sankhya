@@ -1,0 +1,33 @@
+Ajustes no Relatório Status Pedido Analitico Logistica
+
+1. Criação da view STATUS_PEDIDOS_SKU
+2. Criação da view VM_RECEITA_BRUTA_PED
+3. Criação da view V_RECEITA_BRUTA_PED_SKU
+4. Alteração do relatório Pedidos Analitico Logistica
+5. Inclusão do campo Qtde_Item_NF
+6. Criação dos campos na TGFCAB
+Receita Bruta Total = AD_RB_TOTAL: #type.sql#select NVL(RB_TOTAL,0)from RECEITA_BRUTA_PED WHERE NUNOTA_PEDIDO = TGFCAB.NUNOTA AND TIPMOV = 'P' AND CODNAT = 1010101
+Receita Bruta Serviço = AD_RB_SERVICO : #type.sql#select VL(RB_SERVICOS,0) from RECEITA_BRUTA_PED WHERE NUNOTA_PEDIDO = TGFCAB.NUNOTA AND TIPMOV = 'P' AND CODNAT = 1010101
+Receita Bruta Produto = AD_RB_PRODUTO : #type.sql#select NVL(RB_PRODUTOS,0) from RECEITA_BRUTA_PED WHERE NUNOTA_PEDIDO = TGFCAB.NUNOTA AND TIPMOV = 'P' AND CODNAT = 1010101
+
+7. Alteração do Relatório notas Faturadas com itens e impostos - ANTES 12/03
+8. Alteração do Relatório notas Faturadas com itens e impostos - APÓS 12/03
+
+
+#type.sql#select NVL(RB_TOTAL,0)
+from VM_RECEITA_BRUTA_PED
+WHERE NUNOTA_PEDIDO = TGFCAB.NUNOTA
+AND GRUPO_TOP = 'Vendas'
+AND COD_NATUREZA = 1010101
+
+#type.sql#select NVL(RB_SERVICOS,0)
+from  VM_RECEITA_BRUTA_PED
+WHERE NUNOTA_PEDIDO = TGFCAB.NUNOTA
+AND GRUPO_TOP = 'Vendas'
+AND COD_NATUREZA = 1010101
+
+#type.sql#select NVL(RB_PRODUTOS,0)
+from  VM_RECEITA_BRUTA_PED
+WHERE NUNOTA_PEDIDO = TGFCAB.NUNOTA
+AND GRUPO_TOP = 'Vendas'
+AND COD_NATUREZA = 1010101
